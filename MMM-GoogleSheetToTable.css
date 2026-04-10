@@ -1,0 +1,41 @@
+.gsheet-wrapper {
+  max-width: 400px;
+}
+
+.gsheet-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.gsheet-table th {
+  text-align: left;
+  padding: 4px 10px 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.gsheet-table td {
+  padding: 3px 10px 3px 0;
+  vertical-align: top;
+}
+
+.gsheet-date {
+  white-space: nowrap;
+}
+
+.gsheet-name {
+  white-space: nowrap;
+}
+
+.gsheet-group {
+  white-space: nowrap;
+}
+
+.gsheet-loading,
+.gsheet-error,
+.gsheet-empty {
+  padding: 8px 0;
+}
+
+.gsheet-error {
+  color: #ff4444;
+}

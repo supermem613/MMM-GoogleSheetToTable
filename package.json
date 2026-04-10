@@ -1,0 +1,7 @@
+{
+  "name": "mmm-googlesheettotable",
+  "version": "1.0.0",
+  "description": "MagicMirror module that fetches a Google Sheet and displays a filtered table",
+  "main": "node_helper.js",
+  "license": "MIT"
+}
