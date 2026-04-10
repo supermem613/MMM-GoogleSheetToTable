@@ -1,8 +1,8 @@
 # MMM-GoogleSheetToTable
 
-A [MagicMirror²](https://magicmirror.builders/) module that fetches a public Google Sheet and displays a filtered table of entries for specific people.
+A [MagicMirror²](https://magicmirror.builders/) module that fetches a public Google Sheet and displays a filtered table of matching entries.
 
-Given a schedule spreadsheet with dates in one column and group assignments across other columns, the module searches for configured names and renders a clean Date | Name | Group table on your mirror.
+Given a spreadsheet with dates in one column and category assignments across other columns, the module searches for configured values and renders a clean Date | Name | Group table on your mirror.
 
 ## Features
 
@@ -74,7 +74,7 @@ For a schedule sheet where column A has dates and columns B–J have group assig
         updateInterval: 4 * 60 * 60 * 1000,
         maxEntries: 6,
         showPastDates: false,
-        names: ["Asher Markiewicz", "Miriam Markiewicz"],
+        names: ["Jane Smith", "John Smith"],
         columns: {
             "B": "Kitantan",
             "C": "Nursery/Prek",
@@ -94,9 +94,9 @@ This produces a table like:
 
 | Date | Name | Group |
 |------|------|-------|
-| Apr 11 | Asher Markiewicz | K/1 Boys |
-| May 2 | Asher Markiewicz | K/1 Boys |
-| May 16 | Asher Markiewicz | K/1 Boys |
+| Apr 11 | Jane Smith | K/1 Boys |
+| May 2 | Jane Smith | K/1 Boys |
+| May 16 | Jane Smith | K/1 Boys |
 
 ## How It Works
 
