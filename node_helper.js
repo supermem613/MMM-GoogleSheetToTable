@@ -244,16 +244,14 @@ module.exports = NodeHelper.create({
         const row = rows[r];
         const cellA = (row[dateColIdx] || "").trim();
 
-        // Non-empty column A starts a new date block
+        // Column A is the date column by contract. A parseable date opens a new
+        // block; any other non-empty value (e.g. "Learning Program") is a section
+        // header that ends the previous block, and rows beneath it have no known
+        // date until the next real date appears.
         if (cellA) {
           const parsed = parseSheetDate(cellA);
-          if (parsed) {
-            currentDateStr = cellA;
-            currentDate = parsed;
-          } else {
-            // Not a parseable date — could be a sub-label like "Starts after 8:45 minyan"
-            // Keep the current date block
-          }
+          currentDateStr = parsed ? cellA : null;
+          currentDate = parsed;
         }
 
         if (!currentDate) continue;
