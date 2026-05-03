@@ -13,6 +13,8 @@ Module.register("MMM-GoogleSheetToTable", {
     updateInterval: 4 * 60 * 60 * 1000, // 4 hours
     maxEntries: 6,
     showPastDates: false,
+    includeSectionHeaders: false,
+    maxSectionHeaders: 2,
     animationSpeed: 1000
   },
 
@@ -21,7 +23,7 @@ Module.register("MMM-GoogleSheetToTable", {
   },
 
   start: function () {
-    Log.info("Starting module: " + this.name);
+    Log.info(`Starting module: ${this.name}`);
     this.entries = null;
     this.updatedAt = null;
     this.error = null;
@@ -49,19 +51,21 @@ Module.register("MMM-GoogleSheetToTable", {
 
     // Loading state
     if (!this.loaded && !this.error) {
-      wrapper.innerHTML = '<span class="gsheet-loading dimmed small">Loading schedule…</span>';
+      wrapper.innerHTML =
+        '<span class="gsheet-loading dimmed small">Loading schedule…</span>';
       return wrapper;
     }
 
     // Error state with no data
     if (this.error && !this.entries) {
-      wrapper.innerHTML = '<span class="gsheet-error small">' + this.error + '</span>';
+      wrapper.innerHTML = `<span class="gsheet-error small">${this.error}</span>`;
       return wrapper;
     }
 
     // No results
     if (!this.entries || this.entries.length === 0) {
-      wrapper.innerHTML = '<span class="gsheet-empty dimmed small">No upcoming entries found.</span>';
+      wrapper.innerHTML =
+        '<span class="gsheet-empty dimmed small">No upcoming entries found.</span>';
       return wrapper;
     }
 

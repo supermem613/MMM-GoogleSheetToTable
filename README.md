@@ -58,6 +58,8 @@ https://docs.google.com/spreadsheets/d/THIS_IS_THE_SHEET_ID/edit#gid=0
 | `updateInterval` | `14400000` (4 hr) | How often to refresh data from Google Sheets (ms) |
 | `maxEntries` | `6` | Maximum number of entries to display |
 | `showPastDates` | `false` | Whether to include past dates in the table |
+| `includeSectionHeaders` | `false` | When `true`, rows under a non-date label in the date column (e.g. `"Learning Program"`) are included and displayed under that label instead of a date. Header entries appear after dated entries in the table. |
+| `maxSectionHeaders` | `2` | Maximum number of section-header entries to display. Independent of `maxEntries` — dated and header entries each have their own cap, so a full slate of dated matches does not squeeze out undated ones. Only relevant when `includeSectionHeaders` is `true`. |
 | `animationSpeed` | `1000` | DOM update animation speed (ms) |
 
 ## Example
@@ -101,10 +103,14 @@ This produces a table like:
 ## How It Works
 
 1. The node helper fetches the Google Sheet as CSV via the public export URL
-2. Parses CSV into rows, grouping by date blocks (a non-empty date column starts a new block)
+2. Parses CSV into rows, classifying each value in the date column as one of:
+   - **parseable date** → opens a new date block
+   - **non-date text** → section header (e.g. `"Learning Program"`) that ends the previous date block; rows beneath belong to the section, not to a date
+   - **empty** → continues the current date block or section
 3. Searches all configured columns for any configured name (case-insensitive exact match)
 4. Parses dates, sorts chronologically, filters to future-only (by default)
-5. Sends the top N entries to the frontend for table rendering
+5. Section-header matches are dropped by default; enable `includeSectionHeaders` to display them after dated entries with the header text in the Date column
+6. Sends the top N entries to the frontend for table rendering
 
 ## Notes
 

@@ -12,35 +12,46 @@ const Log = require("logger");
 
 /**
  * Minimal HTTPS/HTTP GET with redirect following.
- * @param {string} url
- * @param {number} [redirects=0]
- * @returns {Promise<string>}
+ *
+ * @param {string} url Absolute http(s) URL to fetch.
+ * @param {number} [redirects=0] Internal redirect counter; callers should omit.
+ * @returns {Promise<string>} Resolves with the response body as a UTF-8 string.
  */
 function httpGet(url, redirects) {
   redirects = redirects || 0;
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const mod = parsed.protocol === "https:" ? https : http;
-    mod.get(url, (res) => {
-      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
-        if (redirects >= 5) return reject(new Error("Too many redirects"));
-        return httpGet(res.headers.location, redirects + 1).then(resolve).catch(reject);
-      }
-      if (res.statusCode >= 400) {
-        return reject(new Error("HTTP " + res.statusCode));
-      }
-      let data = "";
-      res.on("data", (chunk) => { data += chunk; });
-      res.on("end", () => resolve(data));
-    }).on("error", reject);
+    mod
+      .get(url, (res) => {
+        if (
+          [301, 302, 303, 307, 308].includes(res.statusCode) &&
+          res.headers.location
+        ) {
+          if (redirects >= 5) return reject(new Error("Too many redirects"));
+          return httpGet(res.headers.location, redirects + 1)
+            .then(resolve)
+            .catch(reject);
+        }
+        if (res.statusCode >= 400) {
+          return reject(new Error(`HTTP ${res.statusCode}`));
+        }
+        let data = "";
+        res.on("data", (chunk) => {
+          data += chunk;
+        });
+        res.on("end", () => resolve(data));
+      })
+      .on("error", reject);
   });
 }
 
 /**
  * Parse a CSV string into a 2D array of strings.
  * Handles quoted fields with embedded commas and escaped quotes.
- * @param {string} text
- * @returns {string[][]}
+ *
+ * @param {string} text Raw CSV text.
+ * @returns {string[][]} Rows of string fields; empty rows are dropped.
  */
 function parseCSV(text) {
   const rows = [];
@@ -70,33 +81,38 @@ function parseCSV(text) {
         }
         row.push(field);
         // Skip comma or newline after quoted field
-        if (i < len && text[i] === ',') {
+        if (i < len && text[i] === ",") {
           i++;
-        } else if (i < len && (text[i] === '\r' || text[i] === '\n')) {
-          if (text[i] === '\r' && i + 1 < len && text[i + 1] === '\n') i++;
+        } else if (i < len && (text[i] === "\r" || text[i] === "\n")) {
+          if (text[i] === "\r" && i + 1 < len && text[i + 1] === "\n") i++;
           i++;
           break;
         }
-      } else if (text[i] === ',' ) {
+      } else if (text[i] === ",") {
         row.push("");
         i++;
-      } else if (text[i] === '\r' || text[i] === '\n') {
+      } else if (text[i] === "\r" || text[i] === "\n") {
         row.push("");
-        if (text[i] === '\r' && i + 1 < len && text[i + 1] === '\n') i++;
+        if (text[i] === "\r" && i + 1 < len && text[i + 1] === "\n") i++;
         i++;
         break;
       } else {
         // Unquoted field
         let field = "";
-        while (i < len && text[i] !== ',' && text[i] !== '\r' && text[i] !== '\n') {
+        while (
+          i < len &&
+          text[i] !== "," &&
+          text[i] !== "\r" &&
+          text[i] !== "\n"
+        ) {
           field += text[i];
           i++;
         }
         row.push(field);
-        if (i < len && text[i] === ',') {
+        if (i < len && text[i] === ",") {
           i++;
-        } else if (i < len && (text[i] === '\r' || text[i] === '\n')) {
-          if (text[i] === '\r' && i + 1 < len && text[i + 1] === '\n') i++;
+        } else if (i < len && (text[i] === "\r" || text[i] === "\n")) {
+          if (text[i] === "\r" && i + 1 < len && text[i + 1] === "\n") i++;
           i++;
           break;
         }
@@ -111,8 +127,9 @@ function parseCSV(text) {
 
 /**
  * Convert spreadsheet column letter (A, B, ..., Z) to 0-based index.
- * @param {string} letter
- * @returns {number}
+ *
+ * @param {string} letter Single column letter A–Z (case-insensitive).
+ * @returns {number} Zero-based column index.
  */
 function colLetterToIndex(letter) {
   return letter.toUpperCase().charCodeAt(0) - 65;
@@ -123,8 +140,9 @@ function colLetterToIndex(letter) {
  * Infers the year: uses the current year, but if the date is more than 6 months in the past,
  * assumes next year.
  * Returns null if parsing fails.
- * @param {string} dateStr
- * @returns {Date|null}
+ *
+ * @param {string} dateStr Cell value such as "April 4th" or "May 2nd".
+ * @returns {Date|null} Parsed Date with inferred year, or null if unparseable.
  */
 function parseSheetDate(dateStr) {
   if (!dateStr || !dateStr.trim()) return null;
@@ -143,8 +161,18 @@ function parseSheetDate(dateStr) {
   const day = parseInt(match[2], 10);
 
   const months = {
-    january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
-    july: 6, august: 7, september: 8, october: 9, november: 10, december: 11
+    january: 0,
+    february: 1,
+    march: 2,
+    april: 3,
+    may: 4,
+    june: 5,
+    july: 6,
+    august: 7,
+    september: 8,
+    october: 9,
+    november: 10,
+    december: 11
   };
   const monthNum = months[monthStr.toLowerCase()];
   if (monthNum === undefined) return null;
@@ -165,18 +193,31 @@ function parseSheetDate(dateStr) {
 
 /**
  * Format a Date as a short display string like "Apr 4" or "May 23".
- * @param {Date} date
- * @returns {string}
+ *
+ * @param {Date} date Date to format.
+ * @returns {string} Short display string, e.g. "Apr 4".
  */
 function formatDateShort(date) {
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return months[date.getMonth()] + " " + date.getDate();
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec"
+  ];
+  return `${months[date.getMonth()]} ${date.getDate()}`;
 }
 
 module.exports = NodeHelper.create({
   start: function () {
-    Log.log("Starting node helper for: " + this.name);
+    Log.log(`Starting node helper for: ${this.name}`);
     this.timer = null;
   },
 
@@ -205,11 +246,13 @@ module.exports = NodeHelper.create({
     const sheetId = this.config.sheetId;
     if (!sheetId) {
       Log.error("MMM-GoogleSheetToTable: No sheetId configured");
-      this.sendSocketNotification("SHEET_ERROR", { error: "No sheetId configured" });
+      this.sendSocketNotification("SHEET_ERROR", {
+        error: "No sheetId configured"
+      });
       return;
     }
 
-    const csvUrl = "https://docs.google.com/spreadsheets/d/" + sheetId + "/gviz/tq?tqx=out:csv";
+    const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
 
     try {
       Log.log("MMM-GoogleSheetToTable: Fetching sheet...");
@@ -217,7 +260,9 @@ module.exports = NodeHelper.create({
       const rows = parseCSV(csvText);
 
       if (rows.length < 2) {
-        this.sendSocketNotification("SHEET_ERROR", { error: "Sheet has no data rows" });
+        this.sendSocketNotification("SHEET_ERROR", {
+          error: "Sheet has no data rows"
+        });
         return;
       }
 
@@ -229,8 +274,16 @@ module.exports = NodeHelper.create({
       }
 
       const names = (this.config.names || []).map((n) => n.toLowerCase());
-      const showPastDates = this.config.showPastDates !== undefined ? this.config.showPastDates : false;
+      const showPastDates =
+        this.config.showPastDates !== undefined
+          ? this.config.showPastDates
+          : false;
       const maxEntries = this.config.maxEntries || 6;
+      const includeSectionHeaders = this.config.includeSectionHeaders === true;
+      const maxSectionHeaders =
+        this.config.maxSectionHeaders !== undefined
+          ? this.config.maxSectionHeaders
+          : 2;
 
       const dateColIdx = colLetterToIndex(this.config.dateColumn || "A");
 
@@ -238,23 +291,34 @@ module.exports = NodeHelper.create({
       const results = [];
       let currentDateStr = null;
       let currentDate = null;
+      let currentSectionHeader = null;
 
       // Skip header row (index 0)
       for (let r = 1; r < rows.length; r++) {
         const row = rows[r];
         const cellA = (row[dateColIdx] || "").trim();
 
-        // Column A is the date column by contract. A parseable date opens a new
-        // block; any other non-empty value (e.g. "Learning Program") is a section
-        // header that ends the previous block, and rows beneath it have no known
-        // date until the next real date appears.
+        // Column A is the date column by contract. Three cases:
+        //   - parseable date  → opens a new date block
+        //   - non-date text   → section header (e.g. "Learning Program") that
+        //                       ends the previous date block; rows beneath it
+        //                       belong to the section, not to a date
+        //   - empty           → continues the current date block or section
         if (cellA) {
           const parsed = parseSheetDate(cellA);
-          currentDateStr = parsed ? cellA : null;
-          currentDate = parsed;
+          if (parsed) {
+            currentDateStr = cellA;
+            currentDate = parsed;
+            currentSectionHeader = null;
+          } else {
+            currentDateStr = null;
+            currentDate = null;
+            currentSectionHeader = cellA;
+          }
         }
 
-        if (!currentDate) continue;
+        if (!currentDate && !(includeSectionHeaders && currentSectionHeader))
+          continue;
 
         // Search configured columns for configured names
         for (const colIdx of Object.keys(columnMap)) {
@@ -264,46 +328,64 @@ module.exports = NodeHelper.create({
 
           for (const name of names) {
             if (cellValue === name) {
+              const isSectionHeader = !currentDate;
               results.push({
                 date: currentDate,
-                dateStr: formatDateShort(currentDate),
+                dateStr: currentDate
+                  ? formatDateShort(currentDate)
+                  : currentSectionHeader,
                 rawDateStr: currentDateStr,
                 name: row[idx].trim(),
-                group: columnMap[idx]
+                group: columnMap[idx],
+                isSectionHeader: isSectionHeader
               });
             }
           }
         }
       }
 
-      // Filter past dates if configured
+      // Filter past dates if configured. Section-header entries have no date
+      // and are always kept (they represent undated upcoming items).
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const filtered = showPastDates
-        ? results
-        : results.filter((r) => r.date >= today);
+      const filtered = results.filter((r) => {
+        if (r.isSectionHeader) return true;
+        return showPastDates || r.date >= today;
+      });
 
-      // Sort by date ascending, then name ascending
+      // Sort: dated entries first (chronological, then name); section-header
+      // entries last in document order (stable sort preserves arrival order).
       filtered.sort((a, b) => {
+        if (a.isSectionHeader && !b.isSectionHeader) return 1;
+        if (!a.isSectionHeader && b.isSectionHeader) return -1;
+        if (a.isSectionHeader && b.isSectionHeader) return 0;
         const dateDiff = a.date.getTime() - b.date.getTime();
         if (dateDiff !== 0) return dateDiff;
         return a.name.localeCompare(b.name);
       });
 
-      // Truncate and strip Date objects (not serializable)
-      const entries = filtered.slice(0, maxEntries).map((r) => ({
+      // Truncate. Dated and section-header entries have independent caps so a
+      // full slate of dated matches doesn't squeeze out the (typically few)
+      // undated ones the user opted into via includeSectionHeaders.
+      const dated = filtered
+        .filter((r) => !r.isSectionHeader)
+        .slice(0, maxEntries);
+      const headers = filtered
+        .filter((r) => r.isSectionHeader)
+        .slice(0, maxSectionHeaders);
+      const entries = dated.concat(headers).map((r) => ({
         dateStr: r.dateStr,
         name: r.name,
         group: r.group
       }));
 
-      Log.log("MMM-GoogleSheetToTable: Found " + entries.length + " entries");
+      Log.log(`MMM-GoogleSheetToTable: Found ${entries.length} entries`);
       this.sendSocketNotification("SHEET_DATA", {
         entries: entries,
         updatedAt: new Date().toISOString()
       });
     } catch (err) {
-      Log.error("MMM-GoogleSheetToTable: Fetch failed: " + err.message);
+      Log.error(`MMM-GoogleSheetToTable: Fetch failed: ${err.message}`);
       this.sendSocketNotification("SHEET_ERROR", { error: err.message });
     }
   }
