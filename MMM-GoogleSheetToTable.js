@@ -8,6 +8,7 @@ Module.register("MMM-GoogleSheetToTable", {
   defaults: {
     sheetId: "",
     names: [],
+    displayNames: {},
     columns: {},
     dateColumn: "A",
     updateInterval: 4 * 60 * 60 * 1000, // 4 hours

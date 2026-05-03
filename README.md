@@ -33,6 +33,9 @@ Add to your `config/config.js`:
     config: {
         sheetId: "YOUR_GOOGLE_SHEET_ID",
         names: ["First Last", "Another Person"],
+        displayNames: {
+            "First Last": "First"
+        },
         columns: {
             "B": "Group 1",
             "C": "Group 2",
@@ -53,6 +56,7 @@ https://docs.google.com/spreadsheets/d/THIS_IS_THE_SHEET_ID/edit#gid=0
 |--------|---------|-------------|
 | `sheetId` | `""` | Google Sheet ID (from the sheet URL) |
 | `names` | `[]` | Array of names to search for (case-insensitive exact match) |
+| `displayNames` | `{}` | Optional matched name → displayed label mapping. Keys are case-insensitive, so `{ "Jane Smith": "Jane" }` renders `"Jane"` while still matching `"Jane Smith"` in the sheet. |
 | `columns` | `{}` | Column letter → group name mapping (e.g., `{ "B": "Kitantan", "C": "Nursery/Prek" }`) |
 | `dateColumn` | `"A"` | Which column contains the date values |
 | `updateInterval` | `14400000` (4 hr) | How often to refresh data from Google Sheets (ms) |
@@ -77,6 +81,10 @@ For a schedule sheet where column A has dates and columns B–J have group assig
         maxEntries: 6,
         showPastDates: false,
         names: ["Jane Smith", "John Smith"],
+        displayNames: {
+            "Jane Smith": "Jane",
+            "John Smith": "John"
+        },
         columns: {
             "B": "Kitantan",
             "C": "Nursery/Prek",
@@ -96,9 +104,9 @@ This produces a table like:
 
 | Date | Name | Group |
 |------|------|-------|
-| Apr 11 | Jane Smith | K/1 Boys |
-| May 2 | Jane Smith | K/1 Boys |
-| May 16 | Jane Smith | K/1 Boys |
+| Apr 11 | Jane | K/1 Boys |
+| May 2 | Jane | K/1 Boys |
+| May 16 | Jane | K/1 Boys |
 
 ## How It Works
 
@@ -108,9 +116,10 @@ This produces a table like:
    - **non-date text** → section header (e.g. `"Learning Program"`) that ends the previous date block; rows beneath belong to the section, not to a date
    - **empty** → continues the current date block or section
 3. Searches all configured columns for any configured name (case-insensitive exact match)
-4. Parses dates, sorts chronologically, filters to future-only (by default)
-5. Section-header matches are dropped by default; enable `includeSectionHeaders` to display them after dated entries with the header text in the Date column
-6. Sends the top N entries to the frontend for table rendering
+4. Applies optional display labels from `displayNames`
+5. Parses dates, sorts chronologically, filters to future-only (by default)
+6. Section-header matches are dropped by default; enable `includeSectionHeaders` to display them after dated entries with the header text in the Date column
+7. Sends the top N entries to the frontend for table rendering
 
 ## Notes
 

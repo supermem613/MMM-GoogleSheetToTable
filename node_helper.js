@@ -274,6 +274,12 @@ module.exports = NodeHelper.create({
       }
 
       const names = (this.config.names || []).map((n) => n.toLowerCase());
+      const displayNames = {};
+      for (const [name, displayName] of Object.entries(
+        this.config.displayNames || {}
+      )) {
+        displayNames[name.trim().toLowerCase()] = displayName;
+      }
       const showPastDates =
         this.config.showPastDates !== undefined
           ? this.config.showPastDates
@@ -329,13 +335,21 @@ module.exports = NodeHelper.create({
           for (const name of names) {
             if (cellValue === name) {
               const isSectionHeader = !currentDate;
+              const matchedName = row[idx].trim();
+              const displayName = Object.prototype.hasOwnProperty.call(
+                displayNames,
+                cellValue
+              )
+                ? displayNames[cellValue]
+                : matchedName;
               results.push({
                 date: currentDate,
                 dateStr: currentDate
                   ? formatDateShort(currentDate)
                   : currentSectionHeader,
                 rawDateStr: currentDateStr,
-                name: row[idx].trim(),
+                name: matchedName,
+                displayName: displayName,
                 group: columnMap[idx],
                 isSectionHeader: isSectionHeader
               });
@@ -375,7 +389,7 @@ module.exports = NodeHelper.create({
         .slice(0, maxSectionHeaders);
       const entries = dated.concat(headers).map((r) => ({
         dateStr: r.dateStr,
-        name: r.name,
+        name: r.displayName,
         group: r.group
       }));
 
