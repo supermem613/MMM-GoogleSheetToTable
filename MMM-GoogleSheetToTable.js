@@ -16,6 +16,7 @@ Module.register("MMM-GoogleSheetToTable", {
     showPastDates: false,
     includeSectionHeaders: false,
     maxSectionHeaders: 2,
+    headerAlignment: "left",
     animationSpeed: 1000
   },
 
@@ -73,15 +74,31 @@ Module.register("MMM-GoogleSheetToTable", {
     // Build table
     var table = document.createElement("table");
     table.className = "gsheet-table small";
+    var headerAlignment =
+      this.config.headerAlignment === "right" ? "right" : "left";
+    table.classList.add(`gsheet-header-align-${headerAlignment}`);
+
+    var columns = [
+      { label: "Date", className: "gsheet-date" },
+      { label: "Name", className: "gsheet-name" },
+      { label: "Group", className: "gsheet-group" }
+    ];
+
+    var colgroup = document.createElement("colgroup");
+    for (var c = 0; c < columns.length; c++) {
+      var col = document.createElement("col");
+      col.className = `${columns[c].className}-column`;
+      colgroup.appendChild(col);
+    }
+    table.appendChild(colgroup);
 
     // Header row
     var thead = document.createElement("thead");
     var headerRow = document.createElement("tr");
-    var headers = ["Date", "Name", "Group"];
-    for (var h = 0; h < headers.length; h++) {
+    for (var h = 0; h < columns.length; h++) {
       var th = document.createElement("th");
-      th.className = "gsheet-header";
-      th.textContent = headers[h];
+      th.className = `gsheet-header ${columns[h].className}`;
+      th.textContent = columns[h].label;
       headerRow.appendChild(th);
     }
     thead.appendChild(headerRow);

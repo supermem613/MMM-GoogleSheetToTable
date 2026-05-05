@@ -46,25 +46,27 @@ Add to your `config/config.js`:
 ```
 
 The `sheetId` is the long string in your Google Sheet URL:
+
 ```
 https://docs.google.com/spreadsheets/d/THIS_IS_THE_SHEET_ID/edit#gid=0
 ```
 
 ## Configuration Options
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `sheetId` | `""` | Google Sheet ID (from the sheet URL) |
-| `names` | `[]` | Array of names to search for (case-insensitive exact match) |
-| `displayNames` | `{}` | Optional matched name → displayed label mapping. Keys are case-insensitive, so `{ "Jane Smith": "Jane" }` renders `"Jane"` while still matching `"Jane Smith"` in the sheet. |
-| `columns` | `{}` | Column letter → group name mapping (e.g., `{ "B": "Kitantan", "C": "Nursery/Prek" }`) |
-| `dateColumn` | `"A"` | Which column contains the date values |
-| `updateInterval` | `14400000` (4 hr) | How often to refresh data from Google Sheets (ms) |
-| `maxEntries` | `6` | Maximum number of entries to display |
-| `showPastDates` | `false` | Whether to include past dates in the table |
-| `includeSectionHeaders` | `false` | When `true`, rows under a non-date label in the date column (e.g. `"Learning Program"`) are included and displayed under that label instead of a date. Header entries appear after dated entries in the table. |
-| `maxSectionHeaders` | `2` | Maximum number of section-header entries to display. Independent of `maxEntries` — dated and header entries each have their own cap, so a full slate of dated matches does not squeeze out undated ones. Only relevant when `includeSectionHeaders` is `true`. |
-| `animationSpeed` | `1000` | DOM update animation speed (ms) |
+| Option                  | Default           | Description                                                                                                                                                                                                                                                    |
+| ----------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sheetId`               | `""`              | Google Sheet ID (from the sheet URL)                                                                                                                                                                                                                           |
+| `names`                 | `[]`              | Array of names to search for (case-insensitive exact match)                                                                                                                                                                                                    |
+| `displayNames`          | `{}`              | Optional matched name → displayed label mapping. Keys are case-insensitive, so `{ "Jane Smith": "Jane" }` renders `"Jane"` while still matching `"Jane Smith"` in the sheet.                                                                                   |
+| `columns`               | `{}`              | Column letter → group name mapping (e.g., `{ "B": "Kitantan", "C": "Nursery/Prek" }`)                                                                                                                                                                          |
+| `dateColumn`            | `"A"`             | Which column contains the date values                                                                                                                                                                                                                          |
+| `updateInterval`        | `14400000` (4 hr) | How often to refresh data from Google Sheets (ms)                                                                                                                                                                                                              |
+| `maxEntries`            | `6`               | Maximum number of entries to display                                                                                                                                                                                                                           |
+| `showPastDates`         | `false`           | Whether to include past dates in the table                                                                                                                                                                                                                     |
+| `includeSectionHeaders` | `false`           | When `true`, rows under a non-date label in the date column (e.g. `"Learning Program"`) are included and displayed under that label instead of a date. Header entries appear after dated entries in the table.                                                 |
+| `maxSectionHeaders`     | `2`               | Maximum number of section-header entries to display. Independent of `maxEntries` — dated and header entries each have their own cap, so a full slate of dated matches does not squeeze out undated ones. Only relevant when `includeSectionHeaders` is `true`. |
+| `headerAlignment`       | `"left"`          | Alignment and outer-edge indentation for the `Date`, `Name`, and `Group` header row. Use `"left"` for modules on the left side of the mirror and `"right"` for modules on the right side.                                                                      |
+| `animationSpeed`        | `1000`            | DOM update animation speed (ms)                                                                                                                                                                                                                                |
 
 ## Example
 
@@ -80,6 +82,7 @@ For a schedule sheet where column A has dates and columns B–J have group assig
         updateInterval: 4 * 60 * 60 * 1000,
         maxEntries: 6,
         showPastDates: false,
+        headerAlignment: "right",
         names: ["Jane Smith", "John Smith"],
         displayNames: {
             "Jane Smith": "Jane",
@@ -102,10 +105,10 @@ For a schedule sheet where column A has dates and columns B–J have group assig
 
 This produces a table like:
 
-| Date | Name | Group |
-|------|------|-------|
+| Date   | Name | Group    |
+| ------ | ---- | -------- |
 | Apr 11 | Jane | K/1 Boys |
-| May 2 | Jane | K/1 Boys |
+| May 2  | Jane | K/1 Boys |
 | May 16 | Jane | K/1 Boys |
 
 ## How It Works
@@ -114,6 +117,7 @@ This produces a table like:
 2. Parses CSV into rows, classifying each value in the date column as one of:
    - **parseable date** → opens a new date block
    - **non-date text** → section header (e.g. `"Learning Program"`) that ends the previous date block; rows beneath belong to the section, not to a date
+   - **note-like non-date text** containing `:` or `;` → stays inside the active date block so inline annotations do not replace the date for matching rows
    - **empty** → continues the current date block or section
 3. Searches all configured columns for any configured name (case-insensitive exact match)
 4. Applies optional display labels from `displayNames`

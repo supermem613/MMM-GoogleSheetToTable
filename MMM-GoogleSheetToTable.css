@@ -7,10 +7,42 @@
   width: 100%;
 }
 
+.gsheet-date-column {
+  width: 4.5em;
+}
+
+.gsheet-name-column {
+  width: 6.5em;
+}
+
 .gsheet-table th {
-  text-align: left;
-  padding: 4px 10px 4px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.gsheet-table.gsheet-header-align-left th {
+  padding: 4px 10px 4px 0;
+  text-align: left;
+}
+
+.gsheet-table.gsheet-header-align-left th:first-child {
+  padding-left: 12px;
+}
+
+.gsheet-table.gsheet-header-align-left th:last-child {
+  padding-right: 0;
+}
+
+.gsheet-table.gsheet-header-align-right th {
+  padding: 4px 0 4px 10px;
+  text-align: right;
+}
+
+.gsheet-table.gsheet-header-align-right th:first-child {
+  padding-left: 0;
+}
+
+.gsheet-table.gsheet-header-align-right th:last-child {
+  padding-right: 12px;
 }
 
 .gsheet-table td {
@@ -18,16 +50,24 @@
   vertical-align: top;
 }
 
+.gsheet-table th.gsheet-date,
 .gsheet-date {
   white-space: nowrap;
 }
 
+.gsheet-table th.gsheet-name,
 .gsheet-name {
   white-space: nowrap;
 }
 
+.gsheet-table th.gsheet-group,
 .gsheet-group {
   white-space: nowrap;
+}
+
+.gsheet-table th.gsheet-group,
+.gsheet-group {
+  padding-right: 0;
 }
 
 .gsheet-loading,
