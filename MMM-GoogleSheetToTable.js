@@ -17,6 +17,7 @@ Module.register("MMM-GoogleSheetToTable", {
     includeSectionHeaders: false,
     maxSectionHeaders: 2,
     headerAlignment: "left",
+    frameWidth: 300, // px width of the rendered module column; raise to align with neighbouring modules
     animationSpeed: 1000
   },
 
@@ -50,6 +51,7 @@ Module.register("MMM-GoogleSheetToTable", {
   getDom: function () {
     var wrapper = document.createElement("div");
     wrapper.className = "gsheet-wrapper";
+    wrapper.style.width = `${this.config.frameWidth}px`;
 
     // Loading state
     if (!this.loaded && !this.error) {

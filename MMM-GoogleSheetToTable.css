@@ -1,5 +1,5 @@
 .gsheet-wrapper {
-  max-width: 400px;
+  /* Width is driven by the frameWidth config option, applied inline. */
 }
 
 .gsheet-table {
@@ -16,12 +16,17 @@
 }
 
 .gsheet-table th {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  border-bottom: 1px solid rgb(255 255 255 / 30%);
 }
 
 .gsheet-table.gsheet-header-align-left th {
   padding: 4px 10px 4px 0;
   text-align: left;
+}
+
+.gsheet-table.gsheet-header-align-right th {
+  padding: 4px 0 4px 10px;
+  text-align: right;
 }
 
 .gsheet-table.gsheet-header-align-left th:first-child {
@@ -30,11 +35,6 @@
 
 .gsheet-table.gsheet-header-align-left th:last-child {
   padding-right: 0;
-}
-
-.gsheet-table.gsheet-header-align-right th {
-  padding: 4px 0 4px 10px;
-  text-align: right;
 }
 
 .gsheet-table.gsheet-header-align-right th:first-child {
@@ -62,12 +62,8 @@
 
 .gsheet-table th.gsheet-group,
 .gsheet-group {
-  white-space: nowrap;
-}
-
-.gsheet-table th.gsheet-group,
-.gsheet-group {
   padding-right: 0;
+  white-space: nowrap;
 }
 
 .gsheet-loading,
@@ -77,5 +73,5 @@
 }
 
 .gsheet-error {
-  color: #ff4444;
+  color: #f44;
 }
