@@ -11,8 +11,8 @@ Given a spreadsheet with dates in one column and category assignments across oth
 - **Config-driven column mapping** — map spreadsheet columns to group names (e.g., `D → "K/1 Boys"`)
 - **Configurable date column** — choose which column contains date values
 - **Future-only filtering** — optionally hide past dates (enabled by default)
-- **Smart date parsing** — handles "Month Nth" format (e.g., "April 4th", "May 2nd") with automatic year inference
-- **Multi-row date blocks** — correctly handles sheets where each date spans multiple rows
+- **Smart date parsing** — handles "Month Nth" format (e.g., "April 4th", "May 2nd") with automatic year inference across year rollover
+- **Multi-row date blocks** — correctly handles sheets where dates and labels span multiple rows
 - **Auto-refreshing** — configurable refresh interval (default: every 4 hours)
 - **Zero external dependencies** — uses only Node built-ins
 
@@ -63,8 +63,8 @@ https://docs.google.com/spreadsheets/d/THIS_IS_THE_SHEET_ID/edit#gid=0
 | `updateInterval`        | `14400000` (4 hr) | How often to refresh data from Google Sheets (ms)                                                                                                                                                                                                              |
 | `maxEntries`            | `6`               | Maximum number of entries to display                                                                                                                                                                                                                           |
 | `showPastDates`         | `false`           | Whether to include past dates in the table                                                                                                                                                                                                                     |
-| `includeSectionHeaders` | `false`           | When `true`, rows under a non-date label in the date column (e.g. `"Learning Program"`) are included and displayed under that label instead of a date. Header entries appear after dated entries in the table.                                                 |
-| `maxSectionHeaders`     | `2`               | Maximum number of section-header entries to display. Independent of `maxEntries` — dated and header entries each have their own cap, so a full slate of dated matches does not squeeze out undated ones. Only relevant when `includeSectionHeaders` is `true`. |
+| `includeSectionHeaders` | `false`           | When `true`, rows under a non-date label in the date column (e.g. `"Learning Program"`) are included and displayed under that label instead of a date. Label entries use the next explicit sheet date for filtering and sorting.                             |
+| `maxSectionHeaders`     | `2`               | Maximum number of non-date label entries to display when no implied date can be found. Label entries with an implied date are sorted chronologically with dated entries and count toward `maxEntries`. Only relevant when `includeSectionHeaders` is `true`.    |
 | `headerAlignment`       | `"left"`          | Alignment and outer-edge indentation for the `Date`, `Name`, and `Group` header row. Use `"left"` for modules on the left side of the mirror and `"right"` for modules on the right side.                                                                      |
 | `frameWidth`            | `300`             | Width of the rendered module column, in pixels. Increase to align with neighbouring modules in the same region.                                                                                                                                                |
 | `animationSpeed`        | `1000`            | DOM update animation speed (ms)                                                                                                                                                                                                                                |
@@ -117,20 +117,20 @@ This produces a table like:
 1. The node helper fetches the Google Sheet as CSV via the public export URL
 2. Parses CSV into rows, classifying each value in the date column as one of:
    - **parseable date** → opens a new date block
-   - **non-date text** → section header (e.g. `"Learning Program"`) that ends the previous date block; rows beneath belong to the section, not to a date
+   - **non-date text** → label block (e.g. `"Learning Program"`) that displays the label while using the next explicit sheet date for filtering and sorting
    - **note-like non-date text** containing `:` or `;` → stays inside the active date block so inline annotations do not replace the date for matching rows
    - **empty** → continues the current date block or section
 3. Searches all configured columns for any configured name (case-insensitive exact match)
 4. Applies optional display labels from `displayNames`
-5. Parses dates, sorts chronologically, filters to future-only (by default)
-6. Section-header matches are dropped by default; enable `includeSectionHeaders` to display them after dated entries with the header text in the Date column
+5. Parses dates, sorts by explicit or implied date, filters to future-only (by default)
+6. Label matches are dropped by default; enable `includeSectionHeaders` to display them in chronological order with the label text in the Date column
 7. Sends the top N entries to the frontend for table rendering
 
 ## Notes
 
 - The Google Sheet must be publicly accessible (anyone with the link can view)
-- Date parsing handles ordinal suffixes (1st, 2nd, 3rd, 4th, etc.) and infers the current year
-- If a date is more than 6 months in the past, it's assumed to be next year
+- Date parsing handles ordinal suffixes (1st, 2nd, 3rd, 4th, etc.) and keeps sheet rows chronological across year rollover
+- Without a previous dated row, if a date is more than 6 months in the past, it's assumed to be next year
 
 ## License
 

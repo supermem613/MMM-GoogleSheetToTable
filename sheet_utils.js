@@ -86,14 +86,15 @@ function colLetterToIndex(letter) {
 
 /**
  * Parse a date string like "April 4th", "May 2nd", "June 13th" into a Date object.
- * Infers the year: uses the current year, but if the date is more than 6 months in the past,
- * assumes next year.
+ * Infers the year from the previous dated row when available. Otherwise uses the current year,
+ * but if the date is more than 6 months in the past, assumes next year.
  * Returns null if parsing fails.
  *
  * @param {string} dateStr Cell value such as "April 4th" or "May 2nd".
+ * @param {Date|null} previousDate Last parsed sheet date, when parsing a chronological block.
  * @returns {Date|null} Parsed Date with inferred year, or null if unparseable.
  */
-function parseSheetDate(dateStr) {
+function parseSheetDate(dateStr, previousDate) {
   if (!dateStr || !dateStr.trim()) return null;
 
   const cleaned = dateStr.trim().replace(/(\d+)(st|nd|rd|th)/gi, "$1");
@@ -120,6 +121,14 @@ function parseSheetDate(dateStr) {
   const monthNum = months[monthStr.toLowerCase()];
   if (monthNum === undefined) return null;
 
+  if (previousDate) {
+    const candidate = new Date(previousDate.getFullYear(), monthNum, day);
+    if (candidate < previousDate) {
+      candidate.setFullYear(previousDate.getFullYear() + 1);
+    }
+    return candidate;
+  }
+
   const now = new Date();
   const candidate = new Date(now.getFullYear(), monthNum, day);
   const sixMonthsAgo = new Date(now);
@@ -127,7 +136,6 @@ function parseSheetDate(dateStr) {
   if (candidate < sixMonthsAgo) {
     candidate.setFullYear(now.getFullYear() + 1);
   }
-
   return candidate;
 }
 
@@ -194,24 +202,57 @@ function buildEntries(rows, config) {
   const dateColIdx = colLetterToIndex(config.dateColumn || "A");
 
   const results = [];
+  const explicitDateByRow = {};
+  const nextExplicitDateByRow = {};
+  let previousExplicitDate = null;
+
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    const dateCell = (row[dateColIdx] || "").trim();
+    const parsedDate = parseSheetDate(dateCell, previousExplicitDate);
+    if (parsedDate) {
+      explicitDateByRow[r] = parsedDate;
+      previousExplicitDate = parsedDate;
+    }
+  }
+
+  let nextExplicitDate = null;
+  for (let r = rows.length - 1; r >= 1; r--) {
+    nextExplicitDateByRow[r] = nextExplicitDate;
+    if (explicitDateByRow[r]) {
+      nextExplicitDate = explicitDateByRow[r];
+    }
+  }
+
   let currentDateStr = null;
   let currentDate = null;
+  let currentSortDate = null;
   let currentSectionHeader = null;
+  let currentDateIsImplied = false;
 
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
     const dateCell = (row[dateColIdx] || "").trim();
 
     if (dateCell) {
-      const parsedDate = parseSheetDate(dateCell);
+      const parsedDate = explicitDateByRow[r];
       if (parsedDate) {
         currentDateStr = dateCell;
         currentDate = parsedDate;
+        currentSortDate = parsedDate;
         currentSectionHeader = null;
+        currentDateIsImplied = false;
       } else if (!(currentDate && isInlineDateAnnotation(dateCell))) {
+        const impliedDate = includeSectionHeaders
+          ? nextExplicitDateByRow[r] || currentDate
+          : null;
         currentDateStr = null;
-        currentDate = null;
+        currentDate = impliedDate;
+        currentSortDate = nextExplicitDateByRow[r]
+          ? new Date(nextExplicitDateByRow[r].getTime() - (rows.length - r))
+          : impliedDate;
         currentSectionHeader = dateCell;
+        currentDateIsImplied = Boolean(impliedDate);
       }
     }
 
@@ -237,8 +278,11 @@ function buildEntries(rows, config) {
 
         results.push({
           date: currentDate,
+          sortDate: currentSortDate,
           dateStr: currentDate
-            ? formatDateShort(currentDate)
+            ? currentDateIsImplied
+              ? currentSectionHeader
+              : formatDateShort(currentDate)
             : currentSectionHeader,
           rawDateStr: currentDateStr,
           name: matchedName,
@@ -261,7 +305,7 @@ function buildEntries(rows, config) {
     if (a.isSectionHeader && !b.isSectionHeader) return 1;
     if (!a.isSectionHeader && b.isSectionHeader) return -1;
     if (a.isSectionHeader && b.isSectionHeader) return 0;
-    const dateDiff = a.date.getTime() - b.date.getTime();
+    const dateDiff = a.sortDate.getTime() - b.sortDate.getTime();
     if (dateDiff !== 0) return dateDiff;
     return a.name.localeCompare(b.name);
   });
