@@ -1,68 +1,92 @@
 .gsheet-wrapper {
   /* Width is driven by the frameWidth config option, applied inline. */
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.gsheet-table {
+/* Beat MagicMirror .region table { border-collapse: separate } so fixed layout sticks. */
+.gsheet-wrapper .gsheet-table {
   border-collapse: collapse;
+  table-layout: fixed;
   width: 100%;
 }
 
+/*
+ * frameWidth 300 must fit "Rosh Hashana - Day 1" + "Miriam" + "Nursery/Prek".
+ * Date keeps half the frame and wraps; name/group stay single-line.
+ */
 .gsheet-date-column {
-  width: 4.5em;
+  width: 50%;
 }
 
 .gsheet-name-column {
-  width: 6.5em;
+  width: 18%;
 }
 
-.gsheet-table th {
+.gsheet-group-column {
+  width: 32%;
+}
+
+.gsheet-wrapper .gsheet-table th {
   border-bottom: 1px solid rgb(255 255 255 / 30%);
 }
 
-.gsheet-table.gsheet-header-align-left th {
+.gsheet-wrapper .gsheet-table.gsheet-header-align-left th {
   padding: 4px 10px 4px 0;
   text-align: left;
 }
 
-.gsheet-table.gsheet-header-align-right th {
+.gsheet-wrapper .gsheet-table.gsheet-header-align-right th {
   padding: 4px 0 4px 10px;
   text-align: right;
 }
 
-.gsheet-table.gsheet-header-align-left th:first-child {
+.gsheet-wrapper .gsheet-table.gsheet-header-align-left th:first-child,
+.gsheet-wrapper .gsheet-table.gsheet-header-align-left td:first-child {
   padding-left: 12px;
 }
 
-.gsheet-table.gsheet-header-align-left th:last-child {
+.gsheet-wrapper .gsheet-table.gsheet-header-align-left th:last-child,
+.gsheet-wrapper .gsheet-table.gsheet-header-align-left td:last-child {
   padding-right: 0;
 }
 
-.gsheet-table.gsheet-header-align-right th:first-child {
+.gsheet-wrapper .gsheet-table.gsheet-header-align-right th:first-child,
+.gsheet-wrapper .gsheet-table.gsheet-header-align-right td:first-child {
   padding-left: 0;
 }
 
-.gsheet-table.gsheet-header-align-right th:last-child {
+.gsheet-wrapper .gsheet-table.gsheet-header-align-right th:last-child,
+.gsheet-wrapper .gsheet-table.gsheet-header-align-right td:last-child {
   padding-right: 12px;
 }
 
-.gsheet-table td {
+.gsheet-wrapper .gsheet-table.gsheet-header-align-left td {
   padding: 3px 10px 3px 0;
+  text-align: left;
   vertical-align: top;
 }
 
-.gsheet-table th.gsheet-date,
-.gsheet-date {
+.gsheet-wrapper .gsheet-table.gsheet-header-align-right td {
+  padding: 3px 0 3px 10px;
+  text-align: right;
+  vertical-align: top;
+}
+
+/* Long holiday / section labels wrap inside the frame; short dates stay one line. */
+.gsheet-wrapper .gsheet-table th.gsheet-date,
+.gsheet-wrapper .gsheet-date {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.gsheet-wrapper .gsheet-table th.gsheet-name,
+.gsheet-wrapper .gsheet-name {
   white-space: nowrap;
 }
 
-.gsheet-table th.gsheet-name,
-.gsheet-name {
-  white-space: nowrap;
-}
-
-.gsheet-table th.gsheet-group,
-.gsheet-group {
-  padding-right: 0;
+.gsheet-wrapper .gsheet-table th.gsheet-group,
+.gsheet-wrapper .gsheet-group {
   white-space: nowrap;
 }
 
