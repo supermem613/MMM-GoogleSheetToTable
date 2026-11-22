@@ -204,6 +204,7 @@ function buildEntries(rows, config) {
   const results = [];
   const explicitDateByRow = {};
   const nextExplicitDateByRow = {};
+  const blockCountByDate = {};
   let previousExplicitDate = null;
 
   for (let r = 1; r < rows.length; r++) {
@@ -213,6 +214,8 @@ function buildEntries(rows, config) {
     if (parsedDate) {
       explicitDateByRow[r] = parsedDate;
       previousExplicitDate = parsedDate;
+      const key = parsedDate.getTime();
+      blockCountByDate[key] = (blockCountByDate[key] || 0) + 1;
     }
   }
 
@@ -229,19 +232,45 @@ function buildEntries(rows, config) {
   let currentSortDate = null;
   let currentSectionHeader = null;
   let currentDateIsImplied = false;
+  // True while column A has no blank cell since the last explicit date row.
+  // Sheet authors stack event labels (e.g. "Maayanot Shabbaton") directly
+  // under the date they belong to, so a label in that run inherits the date.
+  let inExplicitDateRun = false;
+  // Label written directly above the active date row, e.g. "K-1 Lunch".
+  // It is shown only when the sheet has more than one block for that date,
+  // so the blocks stay apart. A single block keeps the plain date because
+  // the label above it can belong to the previous block (see
+  // "Shabbat Channukah 1" above "December 12th").
+  let currentBlockTitle = null;
+  let titleForNextDate = null;
 
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
     const dateCell = (row[dateColIdx] || "").trim();
 
-    if (dateCell) {
+    if (!dateCell) {
+      inExplicitDateRun = false;
+    } else {
       const parsedDate = explicitDateByRow[r];
-      if (parsedDate) {
+      const followingDate = explicitDateByRow[r + 1];
+      if (parsedDate || followingDate) {
+        // A label directly above a date row titles that date.
+        const date = parsedDate || followingDate;
+        if (parsedDate) {
+          currentBlockTitle = titleForNextDate;
+          titleForNextDate = null;
+        } else {
+          currentBlockTitle = dateCell;
+          titleForNextDate = dateCell;
+        }
         currentDateStr = dateCell;
-        currentDate = parsedDate;
-        currentSortDate = parsedDate;
+        currentDate = date;
+        currentSortDate = date;
         currentSectionHeader = null;
         currentDateIsImplied = false;
+        inExplicitDateRun = true;
+      } else if (inExplicitDateRun) {
+        // Label stacked under a date row: keep the active date.
       } else if (!(currentDate && isInlineDateAnnotation(dateCell))) {
         const impliedDate = includeSectionHeaders
           ? nextExplicitDateByRow[r] || currentDate
@@ -282,7 +311,11 @@ function buildEntries(rows, config) {
           dateStr: currentDate
             ? currentDateIsImplied
               ? currentSectionHeader
-              : formatDateShort(currentDate)
+              : formatDateShort(currentDate) +
+                (currentBlockTitle &&
+                blockCountByDate[currentDate.getTime()] > 1
+                  ? ` (${currentBlockTitle})`
+                  : "")
             : currentSectionHeader,
           rawDateStr: currentDateStr,
           name: matchedName,
@@ -307,6 +340,10 @@ function buildEntries(rows, config) {
     if (a.isSectionHeader && b.isSectionHeader) return 0;
     const dateDiff = a.sortDate.getTime() - b.sortDate.getTime();
     if (dateDiff !== 0) return dateDiff;
+    // Keep each block for a shared date together. The frontend shows the
+    // date once per run of equal dateStr values.
+    const blockDiff = a.dateStr.localeCompare(b.dateStr);
+    if (blockDiff !== 0) return blockDiff;
     return a.name.localeCompare(b.name);
   });
 
